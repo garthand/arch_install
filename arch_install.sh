@@ -6,7 +6,7 @@ timedatectl set-timezone America/Chicago
 timedatectl set-ntp true
 sgdisk --zap-all /dev/sda
 sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI System" /dev/sda
-sgdisk -n2:0:0   -t2:8309 -c2:"Linux root" /dev/sda
+sgdisk -n2:0:0   -t2:8304 -c2:"Linux root" /dev/sda
 cryptsetup luksFormat /dev/sda2
 cryptsetup open /dev/sda2 root
 mkfs.btrfs -L archlinux /dev/mapper/root
