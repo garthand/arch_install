@@ -49,7 +49,7 @@ Description = Gracefully upgrading systemd-boot...
 When = PostTransaction
 Exec = /usr/bin/systemctl restart systemd-boot-update.service
 EOF
-cat << EOF > /etc/pacman.d/hooks/80-secureboot.hook
+cat << 'EOF' > /etc/pacman.d/hooks/80-secureboot.hook
 [Trigger]
 Operation = Install
 Operation = Upgrade
