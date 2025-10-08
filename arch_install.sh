@@ -67,12 +67,16 @@ NeedsTargets
 EOF
 sbctl create-keys
 sbctl enroll-keys -m
-pacman -Rns sbctl
-rm -rf /lib/sbctl
+cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
+cp /var/lib/sbctl/keys/db/db.pem /etc/kernel/secure-boot-certificate.pem
+pacman -Rn sbctl
+rm -rf /var/lib/sbctl
+uuid=$(blkid /dev/sda2|awk -F '"' '{print $2}')
+echo "root=UUID=$uuid rw" > /etc/kernel/cmdline
 kernel_version=$(ls /usr/lib/modules)
+mkinitcpio -k "$kernel_version" -g /boot/initramfs-linux.img
 bootctl install
 kernel-install add "$kernel_version" /usr/lib/modules/"$kernel_version"/vmlinuz
 pacman -S --noconfirm systemd
 bootctl install
-mokutil --import /etc/kernel/secure-boot.certificate.cer
 passwd root
