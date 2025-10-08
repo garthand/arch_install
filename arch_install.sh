@@ -7,13 +7,15 @@ timedatectl set-ntp true
 sgdisk --zap-all /dev/sda
 sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI System" /dev/sda
 sgdisk -n2:0:0   -t2:8304 -c2:"Linux root" /dev/sda
-cryptsetup luksFormat /dev/sda2
-cryptsetup open /dev/sda2 root
-mkfs.btrfs -L archlinux /dev/mapper/root
-mount /dev/mapper/root /mnt
+#cryptsetup luksFormat /dev/sda2
+#cryptsetup open /dev/sda2 root
+#mkfs.btrfs -L archlinux /dev/mapper/root
+mkfs.ext4 /dev/sda2
+#mount /dev/mapper/root /mnt
+mount /dev/sda2 /mnt
 mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
-pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs shim mokutil
+pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs sbctl
 arch-chroot /mnt
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
 hwclock --systohc
@@ -63,9 +65,10 @@ Exec = /bin/sh -c 'while read -r f; do /usr/lib/systemd/systemd-sbsign sign --pr
 Depends = sh
 NeedsTargets
 EOF
-openssl genrsa -out /etc/kernel/secure-boot-private-key.pem 2048
-openssl req -new -x509 -sha256 -key /etc/kernel/secure-boot-private-key.pem -out /etc/kernel/secure-boot-certificate.pem -days 3650 -subj "/CN=My Secure Boot Key/"
-openssl x509 -outform DER -in /etc/kernel/secure-boot-certificate.pem -out /etc/kernel/secure-boot-certificate.cer
+sbctl create-keys
+sbctl enroll-keys -m
+pacman -Rns sbctl
+rm -rf /lib/sbctl
 kernel_version=$(ls /usr/lib/modules)
 bootctl install
 kernel-install add "$kernel_version" /usr/lib/modules/"$kernel_version"/vmlinuz
