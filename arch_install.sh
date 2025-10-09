@@ -7,12 +7,10 @@ timedatectl set-ntp true
 sgdisk --zap-all /dev/sda
 sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI System" /dev/sda
 sgdisk -n2:0:0   -t2:8304 -c2:"Linux root" /dev/sda
-#cryptsetup luksFormat /dev/sda2
-#cryptsetup open /dev/sda2 root
-#mkfs.btrfs -L archlinux /dev/mapper/root
-mkfs.ext4 /dev/sda2
-#mount /dev/mapper/root /mnt
-mount /dev/sda2 /mnt
+cryptsetup luksFormat /dev/sda2
+cryptsetup open /dev/sda2 root
+mkfs.btrfs -L archlinux /dev/mapper/cryptroot
+mount /dev/mapper/cryptroot /mnt
 mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs sbctl
@@ -69,10 +67,12 @@ sbctl create-keys
 sbctl enroll-keys -m
 cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
 cp /var/lib/sbctl/keys/db/db.pem /etc/kernel/secure-boot-certificate.pem
-pacman -Rn sbctl
+pacman -Rns --noconfirm sbctl
 rm -rf /var/lib/sbctl
-uuid=$(blkid /dev/sda2|awk -F '"' '{print $2}')
-echo "root=UUID=$uuid rw" > /etc/kernel/cmdline
+uuid=$(blkid|grep LUKS|awk -F '"' '{print $2}')
+echo "cryptdevice=UUID=$uuid:cryptroot root=/dev/mapper/cryptroot rw" > /etc/kernel/cmdline
+echo "cryptroot /dev/disk/by-uuid/$uuid none timeout=180" > /etc/crypttab.initramfs
+echo HOOKS=(base systemd microcode modconf kms keyboard keymap consolefont block filesystems btrfs sd-encrypt fsck) > /etc/mkinitcpio.conf
 kernel_version=$(ls /usr/lib/modules)
 mkinitcpio -k "$kernel_version" -g /boot/initramfs-linux.img
 bootctl install
