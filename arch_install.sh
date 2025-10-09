@@ -8,7 +8,7 @@ sgdisk --zap-all /dev/sda
 sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI System" /dev/sda
 sgdisk -n2:0:0   -t2:8304 -c2:"Linux root" /dev/sda
 cryptsetup luksFormat /dev/sda2
-cryptsetup open /dev/sda2 root
+cryptsetup open /dev/sda2 cryptroot
 mkfs.btrfs -L archlinux /dev/mapper/cryptroot
 mount /dev/mapper/cryptroot /mnt
 mkfs.fat -F 32 /dev/sda1
