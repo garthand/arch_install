@@ -72,7 +72,7 @@ rm -rf /var/lib/sbctl
 uuid=$(blkid|grep LUKS|awk -F '"' '{print $2}')
 echo "cryptdevice=UUID=$uuid:cryptroot root=/dev/mapper/cryptroot rw" > /etc/kernel/cmdline
 echo "cryptroot /dev/disk/by-uuid/$uuid none timeout=180" > /etc/crypttab.initramfs
-echo HOOKS=(base systemd microcode modconf kms keyboard keymap consolefont block filesystems btrfs sd-encrypt fsck) > /etc/mkinitcpio.conf
+sed -i '/^HOOKS=/c\HOOKS=(systemd microcode modconf kms keyboard sd-vconsole block filesystems btrfs sd-encrypt fsck) /etc/mkinitcpio.conf
 kernel_version=$(ls /usr/lib/modules)
 mkinitcpio -k "$kernel_version" -g /boot/initramfs-linux.img
 bootctl install
