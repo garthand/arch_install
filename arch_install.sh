@@ -26,17 +26,6 @@ echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 hostnamectl hostname arch
-#cat << EOF > /etc/kernel/uki.conf
-#[UKI]
-#Splash=/usr/share/systemd/bootctl/splash-arch.bmp
-#SecureBootSigningTool=systemd-sbsign
-#SignKernel=true
-#SecureBootPrivateKey=/etc/kernel/secure-boot-private-key.pem
-#SecureBootCertificate=/etc/kernel/secure-boot-certificate.pem
-#EOF
-#cat << EOF > /etc/kernel/install.conf
-#layout=uki
-#EOF
 mkdir /etc/pacman.d/hooks
 cat << EOF > /etc/pacman.d/hooks/95-systemd-boot.hook
 [Trigger]
@@ -71,19 +60,8 @@ pacman -Rns --noconfirm sbctl
 rm -rf /var/lib/sbctl
 uuid=$(blkid|grep LUKS|awk -F '"' '{print $2}')
 echo "cryptroot UUID=$uuid none discard" > /etc/crypttab
-#echo "cryptdevice=UUID=$uuid:cryptroot root=/dev/mapper/cryptroot rw" > /etc/kernel/cmdline
-#echo "cryptroot /dev/disk/by-uuid/$uuid none timeout=180" > /etc/crypttab.initramfs
-#sed -i '/^HOOKS=/c\HOOKS=(systemd microcode modconf kms keyboard sd-vconsole block filesystems btrfs sd-encrypt fsck) /etc/mkinitcpio.conf
 kernel_version=$(ls /usr/lib/modules)
-#mkinitcpio -k "$kernel_version" -g /boot/initramfs-linux.img
 bootctl install
-#kernel-install add "$kernel_version" /usr/lib/modules/"$kernel_version"/vmlinuz
-#cat << 'EOF' > /etc/dracut.conf.d/10-custom.conf
-#add_dracutmodules+=" crypt btrfs systemd "
-#install_items+=" /usr/bin/cryptsetup /usr/bin/btrfs /usr/bin/systemd-cryptsetup "
-#hostonly=no
-#compress=zstd
-#EOF
 dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
 ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rs.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign
 pacman -S --noconfirm systemd
