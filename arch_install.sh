@@ -5,8 +5,8 @@ setfont Lat2-Terminus16
 timedatectl set-timezone America/Chicago
 timedatectl set-ntp true
 sgdisk --zap-all /dev/sda
-sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI System" /dev/sda
-sgdisk -n2:0:0   -t2:8304 -c2:"Linux root" /dev/sda
+sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI" /dev/sda
+sgdisk -n2:0:0   -t2:8304 -c2:"ROOT" /dev/sda
 echo -n "password" | cryptsetup luksFormat /dev/sda2 -q --type luks2 --batch-mode
 echo -n "password" | cryptsetup open /dev/sda2 cryptroot --key-file=-
 mkfs.btrfs -L archlinux /dev/mapper/cryptroot
