@@ -74,7 +74,7 @@ echo "cryptroot UUID=$uuid none discard" > /etc/crypttab
 #echo "cryptdevice=UUID=$uuid:cryptroot root=/dev/mapper/cryptroot rw" > /etc/kernel/cmdline
 #echo "cryptroot /dev/disk/by-uuid/$uuid none timeout=180" > /etc/crypttab.initramfs
 #sed -i '/^HOOKS=/c\HOOKS=(systemd microcode modconf kms keyboard sd-vconsole block filesystems btrfs sd-encrypt fsck) /etc/mkinitcpio.conf
-#kernel_version=$(ls /usr/lib/modules)
+kernel_version=$(ls /usr/lib/modules)
 #mkinitcpio -k "$kernel_version" -g /boot/initramfs-linux.img
 bootctl install
 #kernel-install add "$kernel_version" /usr/lib/modules/"$kernel_version"/vmlinuz
@@ -84,6 +84,7 @@ bootctl install
 #hostonly=no
 #compress=zstd
 #EOF
+dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
 ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rs.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign
 pacman -S --noconfirm systemd
 bootctl install
