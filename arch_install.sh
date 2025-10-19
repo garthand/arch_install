@@ -13,7 +13,7 @@ mkfs.btrfs -L archlinux /dev/mapper/cryptroot
 mount /dev/mapper/cryptroot /mnt
 mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
-pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator
+pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
@@ -61,7 +61,6 @@ cat << EOF > /etc/systemd/zram-generator.conf
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd
 EOF
-systemctl enable systemd-zram-setup@zram0.service
 sbctl create-keys
 sbctl enroll-keys -m
 cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
@@ -77,4 +76,7 @@ ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmd
 pacman -S --noconfirm systemd
 bootctl install
 systemctl enable systemd-homed.service
-homectl create testuser --storage=directory --group=testuser --member-of=wheel --shell=/bin/bash --real-name="Test User" --password
+ln -s /usr/bin/vim /usr/bin/vi
+echo "alias ll='ls -l' 2>/dev/null" > /etc/profile.d/ll.sh
+#homectl create testuser --storage=directory --group=testuser --member-of=wheel --shell=/bin/bash --real-name="Test User" --password
+systemctl mask brltty
