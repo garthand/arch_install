@@ -13,7 +13,7 @@ mkfs.btrfs -L archlinux /dev/mapper/cryptroot
 mount /dev/mapper/cryptroot /mnt
 mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
-pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan vulkan-tools lib32-vulkan-tools steam steam-native-runtime gamemode lib32-gamemode lutris
+pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan vulkan-tools lib32-vulkan-tools steam gamemode lib32-gamemode lutris
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
