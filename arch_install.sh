@@ -1,4 +1,4 @@
-d#!/bin/bash
+#!/bin/bash
 
 loadkeys us
 setfont Lat2-Terminus16
