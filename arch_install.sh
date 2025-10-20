@@ -65,7 +65,7 @@ compression-algorithm = zstd
 EOF
 echo 'omit_drivers+=" nouveau "' > /etc/dracut.conf.d/99-nouveau.conf
 mkdir -p /etc/dkms/post-install.d
-cat << EOF > /etc/dkms/post-install.d/sign-nvidia.sh
+cat << 'EOF' > /etc/dkms/post-install.d/sign-nvidia.sh
 #!/bin/bash
 # DKMS post-install hook to sign NVIDIA kernel modules for Secure Boot on Arch
 
@@ -77,7 +77,7 @@ MODULE_DIR="$1"  # DKMS passes the module install path
 
 KVER=$(basename "$(dirname "$(dirname "$MODULE_DIR")")")
 
-SIGN_FILE="/usr/lib/modules/$(uname -r)/build/scripts/sign-file"
+SIGN_FILE="$MODULE_DIR/../../build/scripts/sign-file"
 [ -x "$SIGN_FILE" ] || { echo "sign-file script not found!"; exit 1; }
 
 echo "Signing NVIDIA kernel modules in $MODULE_DIR..."
