@@ -13,6 +13,8 @@ mkfs.btrfs -L archlinux /dev/mapper/cryptroot
 mount /dev/mapper/cryptroot /mnt
 mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
+# For nvidia: linux-headers nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
+# For AMD: vulkan-radeon lib32-vulkan-radeon mesa lib32-mesa linux-firmware-amdgpu
 pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
@@ -61,6 +63,31 @@ cat << EOF > /etc/systemd/zram-generator.conf
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd
 EOF
+echo 'omit_drivers+=" nouveau "' > /etc/dracut.conf.d/99-nouveau.conf
+mkdir -p /etc/dkms/post-install.d
+cat << EOF > /etc/dkms/post-install.d/sign-nvidia.sh
+#!/bin/bash
+# DKMS post-install hook to sign NVIDIA modules for Secure Boot
+
+KEY=/etc/secureboot/MOK.key
+CRT=/etc/secureboot/MOK.crt
+
+MODULE_DIR="$1"  # DKMS passes the module install path
+[ -d "$MODULE_DIR" ] || exit 0
+
+echo "Signing NVIDIA modules in $MODULE_DIR for Secure Boot..."
+
+# Sign all NVIDIA kernel modules
+find "$MODULE_DIR" -type f -name 'nvidia*.ko.zst' | while read -r FILE; do
+    echo "Signing $FILE..."
+    /usr/lib/systemd/systemd-sbsign sign --key "$KEY" --cert "$CRT" --output "${FILE}.signed" "$FILE"
+    mv "${FILE}.signed" "$FILE"
+done
+
+# Update module dependencies
+depmod -a
+EOF
+chmod 700 /etc/dkms/post-install.d/sign-nvidia.sh
 sbctl create-keys
 sbctl enroll-keys -m
 cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
@@ -72,7 +99,7 @@ echo "cryptroot UUID=$uuid none discard" > /etc/crypttab
 kernel_version=$(ls /usr/lib/modules)
 bootctl install
 dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
-ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
+ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw module.sig_enforce=1 modprobe.blacklist=nouveau" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
 pacman -S --noconfirm systemd
 bootctl install
 systemctl enable systemd-homed.service
