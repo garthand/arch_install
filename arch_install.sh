@@ -67,21 +67,33 @@ echo 'omit_drivers+=" nouveau "' > /etc/dracut.conf.d/99-nouveau.conf
 mkdir -p /etc/dkms/post-install.d
 cat << EOF > /etc/dkms/post-install.d/sign-nvidia.sh
 #!/bin/bash
-# DKMS post-install hook to sign NVIDIA modules for Secure Boot
+# DKMS post-install hook to sign NVIDIA kernel modules for Secure Boot on Arch
 
-KEY=/etc/secureboot/MOK.key
-CRT=/etc/secureboot/MOK.crt
+KEY=/etc/kernel/secure-boot-private-key.pem
+CRT=/etc/kernel/secure-boot-certificate.pem
 
 MODULE_DIR="$1"  # DKMS passes the module install path
 [ -d "$MODULE_DIR" ] || exit 0
 
-echo "Signing NVIDIA modules in $MODULE_DIR for Secure Boot..."
+SIGN_FILE="/usr/lib/modules/$(uname -r)/build/scripts/sign-file"
+[ -x "$SIGN_FILE" ] || { echo "sign-file script not found!"; exit 1; }
 
-# Sign all NVIDIA kernel modules
+echo "Signing NVIDIA kernel modules in $MODULE_DIR..."
+
+# Find all NVIDIA .ko.zst modules
 find "$MODULE_DIR" -type f -name 'nvidia*.ko.zst' | while read -r FILE; do
-    echo "Signing $FILE..."
-    /usr/lib/systemd/systemd-sbsign sign --key "$KEY" --cert "$CRT" --output "${FILE}.signed" "$FILE"
-    mv "${FILE}.signed" "$FILE"
+    echo "Processing $FILE..."
+
+    # Decompress .ko.zst to temporary file
+    TMP=$(mktemp)
+    zstd -d "$FILE" -o "$TMP"
+
+    # Sign the module
+    "$SIGN_FILE" sha256 "$KEY" "$CRT" "$TMP"
+
+    # Compress back and overwrite original
+    zstd -f "$TMP" -o "$FILE"
+    rm -f "$TMP"
 done
 
 # Update module dependencies
