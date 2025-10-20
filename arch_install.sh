@@ -75,6 +75,8 @@ CRT=/etc/kernel/secure-boot-certificate.pem
 MODULE_DIR="$1"  # DKMS passes the module install path
 [ -d "$MODULE_DIR" ] || exit 0
 
+KVER=$(basename "$(dirname "$(dirname "$MODULE_DIR")")")
+
 SIGN_FILE="/usr/lib/modules/$(uname -r)/build/scripts/sign-file"
 [ -x "$SIGN_FILE" ] || { echo "sign-file script not found!"; exit 1; }
 
@@ -86,7 +88,7 @@ find "$MODULE_DIR" -type f -name 'nvidia*.ko.zst' | while read -r FILE; do
 
     # Decompress .ko.zst to temporary file
     TMP=$(mktemp)
-    zstd -d "$FILE" -o "$TMP"
+    zstd -d -f "$FILE" -o "$TMP"
 
     # Sign the module
     "$SIGN_FILE" sha256 "$KEY" "$CRT" "$TMP"
