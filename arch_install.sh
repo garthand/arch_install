@@ -63,45 +63,7 @@ cat << EOF > /etc/systemd/zram-generator.conf
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd
 EOF
-echo 'omit_drivers+=" nouveau "' > /etc/dracut.conf.d/99-nouveau.conf
-mkdir -p /etc/dkms/post-install.d
-cat << 'EOF' > /etc/dkms/post-install.d/sign-nvidia.sh
-#!/bin/bash
-# DKMS post-install hook to sign NVIDIA kernel modules for Secure Boot on Arch
-
-KEY=/etc/kernel/secure-boot-private-key.pem
-CRT=/etc/kernel/secure-boot-certificate.pem
-
-MODULE_DIR="$1"  # DKMS passes the module install path
-[ -d "$MODULE_DIR" ] || exit 0
-
-KVER=$(basename "$(dirname "$(dirname "$MODULE_DIR")")")
-
-SIGN_FILE="$MODULE_DIR/../../build/scripts/sign-file"
-[ -x "$SIGN_FILE" ] || { echo "sign-file script not found!"; exit 1; }
-
-echo "Signing NVIDIA kernel modules in $MODULE_DIR..."
-
-# Find all NVIDIA .ko.zst modules
-find "$MODULE_DIR" -type f -name 'nvidia*.ko.zst' | while read -r FILE; do
-    echo "Processing $FILE..."
-
-    # Decompress .ko.zst to temporary file
-    TMP=$(mktemp)
-    zstd -d -f "$FILE" -o "$TMP"
-
-    # Sign the module
-    "$SIGN_FILE" sha256 "$KEY" "$CRT" "$TMP"
-
-    # Compress back and overwrite original
-    zstd -f "$TMP" -o "$FILE"
-    rm -f "$TMP"
-done
-
-# Update module dependencies
-depmod -a
-EOF
-chmod 700 /etc/dkms/post-install.d/sign-nvidia.sh
+#echo 'omit_drivers+=" nouveau "' > /etc/dracut.conf.d/99-nouveau.conf
 sbctl create-keys
 sbctl enroll-keys -m
 cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
