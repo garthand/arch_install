@@ -15,6 +15,8 @@ mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 # For nvidia: linux-headers nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
 # For AMD: vulkan-radeon lib32-vulkan-radeon mesa lib32-mesa linux-firmware-amdgpu
+sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
+sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
 pacstrap -K /mnt base linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
