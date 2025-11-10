@@ -221,3 +221,5 @@ NftablesCounters=no
 # Defaults to "yes".
 NftablesTableOwner=yes
 EOF
+rm -f /etc/firewalld/firewalld.conf
+ln -s /etc/firewalld/firewalld-workstation.conf /etc/firewalld/firewalld.conf
