@@ -97,7 +97,6 @@ heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '
 flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
 flatpak install -y com.discordapp.Discord/x86_64/stable
 systemctl enable gdm
-systemctl enable NetworkManager
 systemctl enable firewalld
 cat << EOF > /etc/firewalld/firewalld-workstation.conf
 # firewalld config file
