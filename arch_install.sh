@@ -222,6 +222,19 @@ NftablesCounters=no
 # Defaults to "yes".
 NftablesTableOwner=yes
 EOF
+cat << EOF > /etc/firewalld/zones/ArchWorkstation.xml
+<?xml version="1.0" encoding="utf-8"?>
+<zone>
+  <short>Arch Workstation</short>
+  <description>Unsolicited incoming network packets are rejected from port 1 to 1024, except for select network services. Incoming packets that are related to outgoing network connections are accepted. Outgoing network connections are allowed.</description>
+  <service name="dhcpv6-client"/>
+  <service name="ssh"/>
+  <service name="samba-client"/>
+  <port port="1025-65535" protocol="udp"/>
+  <port port="1025-65535" protocol="tcp"/>
+  <forward/>
+</zone>
+EOF
 rm -f /etc/firewalld/firewalld.conf
 ln -s /etc/firewalld/firewalld-workstation.conf /etc/firewalld/firewalld.conf
 unlink /bin/sh
