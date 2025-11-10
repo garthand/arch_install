@@ -226,3 +226,5 @@ rm -f /etc/firewalld/firewalld.conf
 ln -s /etc/firewalld/firewalld-workstation.conf /etc/firewalld/firewalld.conf
 unlink /bin/sh
 ln -s dash /bin/sh
+echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+usermod -a -G wheel testuser
