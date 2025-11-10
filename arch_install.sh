@@ -17,8 +17,9 @@ mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 # For AMD: vulkan-radeon lib32-vulkan-radeon mesa lib32-mesa linux-firmware-amdgpu
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash keepassxc gnome firewalld dash
+pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash keepassxc gnome firewalld dash
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
+# ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 systemctl enable fstrim.timer
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
@@ -35,6 +36,7 @@ hostnamectl hostname arch
 cp /usr/lib/systemd/network/89-ethernet.network.example /etc/systemd/network/89-ethernet.network
 systemctl enable systemd-resolved
 systemctl enable systemd-networkd
+# systemctl enable NetworkManager
 mkdir /etc/pacman.d/hooks
 cat << EOF > /etc/pacman.d/hooks/95-systemd-boot.hook
 [Trigger]
@@ -241,3 +243,18 @@ unlink /bin/sh
 ln -s dash /bin/sh
 echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 usermod -a -G wheel testuser
+pacman -S --noconfirm cups gutenprint
+systemctl enable cups
+echo "kernel.unprivileged_userns_clone=1" > /etc/sysctl.d/00-local.conf
+su - testuser
+git clone https://aur.archlinux.org/shim-signed.git
+cd shim-signed
+makepkg -si
+mv /boot/EFI/BOOT/BOOTx64.EFI /boot/EFI/BOOT/grubx64.efi
+cp /usr/share/shim-signed/shimx64.efi /boot/EFI/BOOT/BOOTx64.EFI
+cp /usr/share/shim-signed/mmx64.efi /boot/EFI/BOOT/
+pacman -S --noconfirm efibootmgr mokutil
+efibootmgr --unicode --disk /dev/sda --part 1 --create --label "Shim" --loader /EFI/BOOT/BOOTx64.EFI
+# HOOKS TODO:
+# When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
+# Need a hook to re-run dracut and ukify build when kernel updates
