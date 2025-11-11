@@ -17,7 +17,7 @@ mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 # For AMD: vulkan-radeon lib32-vulkan-radeon mesa lib32-mesa linux-firmware-amdgpu
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash gnome firewalld dash
+pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash gnome firewalld dash firefox
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 # ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
@@ -258,3 +258,4 @@ efibootmgr --unicode --disk /dev/sda --part 1 --create --label "Shim" --loader /
 # HOOKS TODO:
 # When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
 # Need a hook to re-run dracut and ukify build when kernel updates
+systemctl enable systemd-oomd
