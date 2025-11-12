@@ -13,11 +13,11 @@ mkfs.btrfs -L archlinux /dev/mapper/cryptroot
 mount /dev/mapper/cryptroot /mnt
 mkfs.fat -F 32 /dev/sda1
 mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
-# For nvidia: linux-headers nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
-# For AMD: vulkan-radeon lib32-vulkan-radeon mesa lib32-mesa linux-firmware-amdgpu
+# For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
+# For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash gnome firewalld dash firefox
+pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox mesa lib32-mesa
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 # ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
@@ -99,7 +99,8 @@ ln -s ~/.var/app/com.heroicgameslauncher.hgl/config/heroic/tools/proton/GE-Proto
 heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '/' '{print $3}')
 flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
 flatpak install -y com.discordapp.Discord/x86_64/stable
-systemctl enable gdm
+#pacman -S gnome --noconfirm
+#systemctl enable gdm
 systemctl enable firewalld
 cat << EOF > /etc/firewalld/firewalld-workstation.conf
 # firewalld config file
