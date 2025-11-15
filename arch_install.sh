@@ -17,9 +17,9 @@ mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which gnome xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox mesa lib32-mesa pipewire wireplumber
-ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
-# ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
+pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta
+#ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
+ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 systemctl enable fstrim.timer
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
@@ -34,9 +34,9 @@ locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 hostnamectl hostname arch
 cp /usr/lib/systemd/network/89-ethernet.network.example /etc/systemd/network/89-ethernet.network
-systemctl enable systemd-resolved
-systemctl enable systemd-networkd
-# systemctl enable NetworkManager
+#systemctl enable systemd-resolved
+#systemctl enable systemd-networkd
+systemctl enable NetworkManager
 mkdir /etc/pacman.d/hooks
 cat << EOF > /etc/pacman.d/hooks/95-systemd-boot.hook
 [Trigger]
@@ -109,7 +109,7 @@ ln -s ~/.var/app/com.heroicgameslauncher.hgl/config/heroic/tools/proton/GE-Proto
 heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '/' '{print $3}')
 flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
 flatpak install -y com.discordapp.Discord/x86_64/stable
-systemctl enable gdm
+systemctl enable sddm
 systemctl enable firewalld
 cat << EOF > /etc/firewalld/firewalld-workstation.conf
 # firewalld config file
@@ -240,8 +240,6 @@ cat << EOF > /etc/firewalld/zones/ArchWorkstation.xml
   <short>Arch Workstation</short>
   <description>Unsolicited incoming network packets are rejected from port 1 to 1024, except for select network services. Incoming packets that are related to outgoing network connections are accepted. Outgoing network connections are allowed.</description>
   <service name="dhcpv6-client"/>
-  <service name="ssh"/>
-  <service name="samba-client"/>
   <port port="1025-65535" protocol="udp"/>
   <port port="1025-65535" protocol="tcp"/>
   <forward/>
@@ -266,6 +264,6 @@ cp /usr/share/shim-signed/mmx64.efi /boot/EFI/BOOT/
 pacman -S --noconfirm efibootmgr mokutil
 efibootmgr --unicode --disk /dev/sda --part 1 --create --label "Shim" --loader /EFI/BOOT/BOOTx64.EFI
 # HOOKS TODO:
-# When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
+# When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install/update, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
 # Need a hook to re-run dracut and ukify build when kernel updates
 systemctl enable systemd-oomd
