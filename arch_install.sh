@@ -265,5 +265,6 @@ pacman -S --noconfirm efibootmgr mokutil
 efibootmgr --unicode --disk /dev/sda --part 1 --create --label "Shim" --loader /EFI/BOOT/BOOTx64.EFI
 # HOOKS TODO:
 # When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install/update, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
+# mokutil --import /var/lib/dkms/mok.pub # For NVIDIA ONLY
 # Need a hook to re-run dracut and ukify build when kernel updates
 systemctl enable systemd-oomd
