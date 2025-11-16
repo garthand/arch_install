@@ -73,6 +73,7 @@ sbctl create-keys
 sbctl enroll-keys -m
 cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
 cp /var/lib/sbctl/keys/db/db.pem /etc/kernel/secure-boot-certificate.pem
+openssl x509 -in /etc/kernel/secure-boot-certificate.pem -outform DER -out /etc/kernel/secure-boot-certificate.der
 pacman -Rns --noconfirm sbctl
 rm -rf /var/lib/sbctl
 #drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
@@ -265,6 +266,8 @@ pacman -S --noconfirm efibootmgr mokutil
 efibootmgr --unicode --disk /dev/sda --part 1 --create --label "Shim" --loader /EFI/BOOT/BOOTx64.EFI
 # HOOKS TODO:
 # When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install/update, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
-# mokutil --import /var/lib/dkms/mok.pub # For NVIDIA ONLY
+sudo mkdir -p /var/lib/dkms
+sudo ln -sf /etc/kernel/secure-boot-private-key.pem /var/lib/dkms/mok.key
+sudo ln -sf /etc/kernel/secure-boot-certificate.der  /var/lib/dkms/mok.pub
 # Need a hook to re-run dracut and ukify build when kernel updates
 systemctl enable systemd-oomd
