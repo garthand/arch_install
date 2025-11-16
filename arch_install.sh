@@ -18,7 +18,6 @@ mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
 pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta
-#ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 systemctl enable fstrim.timer
@@ -91,15 +90,13 @@ echo "cryptroot UUID=$uuid none discard" > /etc/crypttab
 kernel_version=$(ls /usr/lib/modules)
 bootctl install
 dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
-#ukify build --linux /boot/vmlinuz-linux-hardened --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw module.sig_enforce=1 modprobe.blacklist=nouveau" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
-ukify build --linux /boot/vmlinuz-linux-hardened --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
+ukify build --linux /boot/vmlinuz-linux-hardened --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw module.sig_enforce=1 modprobe.blacklist=nouveau" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
 pacman -S --noconfirm systemd
 bootctl install
 systemctl enable systemd-homed.service
 ln -s /usr/bin/vim /usr/bin/vi
 echo "alias ll='ls -l' 2>/dev/null" > /etc/profile.d/ll.sh
 #homectl create testuser --storage=directory --group=testuser --member-of=wheel --shell=/bin/bash --real-name="Test User" --password
-#pacman -Rns --noconfirm orca
 useradd testuser -m -G wheel -s "/bin/bash" -c "Test User" -p $(openssl passwd -6 "password")
 # Symlink Steam Proton to Heroic Games Launcher
 flatpak install -y com.heroicgameslauncher.hgl
