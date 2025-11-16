@@ -75,8 +75,8 @@ cp /var/lib/sbctl/keys/db/db.key /etc/kernel/secure-boot-private-key.pem
 cp /var/lib/sbctl/keys/db/db.pem /etc/kernel/secure-boot-certificate.pem
 pacman -Rns --noconfirm sbctl
 rm -rf /var/lib/sbctl
-drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
-sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/"$drive"
+#drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
+#systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/"$drive"
 mkdir /etc/crypttab.d
 device_name=$(sudo awk '{print $1}' /etc/crypttab)
 device_uuid=$(sudo awk '{print $2}' /etc/crypttab)
