@@ -98,7 +98,7 @@ systemctl enable systemd-homed.service
 ln -s /usr/bin/vim /usr/bin/vi
 echo "alias ll='ls -l' 2>/dev/null" > /etc/profile.d/ll.sh
 #homectl create testuser --storage=directory --group=testuser --member-of=wheel --shell=/bin/bash --real-name="Test User" --password
-pacman -Rns --noconfirm orca
+#pacman -Rns --noconfirm orca
 useradd testuser -m -G wheel -s "/bin/bash" -c "Test User" -p $(openssl passwd -6 "password")
 # Symlink Steam Proton to Heroic Games Launcher
 flatpak install -y com.heroicgameslauncher.hgl
