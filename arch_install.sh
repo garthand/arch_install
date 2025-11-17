@@ -17,7 +17,7 @@ mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base base-devel git linux-hardened linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta
+pacstrap -K /mnt base base-devel git linux linux-firmware systemd-ukify vim amd-ucode man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 systemctl enable fstrim.timer
@@ -79,8 +79,6 @@ openssl x509 -in /etc/kernel/secure-boot-certificate.pem -outform DER -out /etc/
 mkdir -p /var/lib/dkms
 ln -sf /etc/kernel/secure-boot-private-key.pem /var/lib/dkms/mok.key
 ln -sf /etc/kernel/secure-boot-certificate.der /var/lib/dkms/mok.pub
-#drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
-#systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/"$drive"
 mkdir /etc/crypttab.d
 device_name=$(sudo awk '{print $1}' /etc/crypttab)
 device_uuid=$(sudo awk '{print $2}' /etc/crypttab)
@@ -94,7 +92,8 @@ echo "cryptroot UUID=$uuid none discard" > /etc/crypttab
 kernel_version=$(ls /usr/lib/modules)
 bootctl install
 dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
-ukify build --linux /boot/vmlinuz-linux-hardened --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw module.sig_enforce=1 modprobe.blacklist=nouveau" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
+# Can add module.sig_enforce=1 modprobe.blacklist=nouveau if wanted
+ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
 pacman -S --noconfirm systemd
 bootctl install
 systemctl enable systemd-homed.service
@@ -255,16 +254,5 @@ echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 usermod -a -G wheel testuser
 pacman -S --noconfirm cups gutenprint
 systemctl enable cups
-echo "kernel.unprivileged_userns_clone=1" > /etc/sysctl.d/00-local.conf
-# su - testuser
-# git clone https://aur.archlinux.org/shim-signed.git
-# cd shim-signed
-# makepkg -si
-# mv /boot/EFI/BOOT/BOOTx64.EFI /boot/EFI/BOOT/grubx64.efi
-# cp /usr/share/shim-signed/shimx64.efi /boot/EFI/BOOT/BOOTx64.EFI
-# cp /usr/share/shim-signed/mmx64.efi /boot/EFI/BOOT/
-# pacman -S --noconfirm efibootmgr mokutil
-# efibootmgr --unicode --disk /dev/sda --part 1 --create --label "Shim" --loader /EFI/BOOT/BOOTx64.EFI
-# HOOKS TODO:
-# When systemd updates, bootloader will need to update. Will want to back up shim, run bootctl install/update, move systemd bootloader to grub64.efi, then move shim back over (otherwise bootloader will overwrite shim)
-# Need a hook to re-run dracut and ukify build when kernel updates
+#drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
+#systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/"$drive"
