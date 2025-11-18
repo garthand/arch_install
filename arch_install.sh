@@ -17,13 +17,15 @@ mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base base-devel git linux linux-firmware systemd-ukify vim amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox libreoffice-fresh mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
+pacstrap -K /mnt base base-devel git linux linux-firmware systemd-ukify vim amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld dash firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /mnt/etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /mnt/etc/pacman.conf
 systemctl enable fstrim.timer
 systemctl enable systemd-oomd
+systemctl enable tuned
+systemctl enabled tuned-ppd
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
 hwclock --systohc
 localectl set-keymap us
