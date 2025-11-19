@@ -26,7 +26,7 @@ plymouth-set-default-theme spinfinity
 systemctl enable fstrim.timer
 systemctl enable systemd-oomd
 systemctl enable tuned
-systemctl enabled tuned-ppd
+systemctl enable tuned-ppd
 ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
 hwclock --systohc
 localectl set-keymap us
