@@ -98,7 +98,7 @@ kernel_version=$(ls /usr/lib/modules)
 bootctl install
 dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
 # Can add module.sig_enforce=1 modprobe.blacklist=nouveau if wanted
-ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
+ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw splash quiet" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
 pacman -S --noconfirm systemd
 bootctl install
 systemctl enable systemd-homed.service
