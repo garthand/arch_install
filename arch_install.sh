@@ -4,7 +4,7 @@ IFS=$'\n\t'
 
 pre_setup() {
   local luks_password=$1
-  local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print $1}')
+  local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print "/dev/" $1}')
   /usr/bin/loadkeys us
   /usr/bin/setfont Lat2-Terminus16
   /usr/bin/timedatectl set-timezone America/Chicago
@@ -22,15 +22,16 @@ pre_setup() {
     # Create the EFI partition
     /usr/bin/sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$disk"
     # Create the boot partition
-    /usr/bin/sgdisk -n 2:0:+100M -t 2:8300 "$disk"
+    /usr/bin/sgdisk -n 2:0:+100M -t 2:8300 -c 2:"BOOT" "$disk"
     # Create the root partition
     /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
     # Identify and format the EFI partition
-    local efi_partition=$(/usr/bin/lsblk -f|/usr/bin/grep EFI|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
+    # TODO: This doesn't work for all disks. Works for sda1 sda2, etc but nvmes are nvmen0p1. Need a better tool than gdisk
+    local efi_partition=$(/usr/bin/gdisk -l "$disk"|/usr/bin/grep EFI|/usr/bin/awk -v disk="$disk" '{print disk $1}')
     /usr/bin/mkfs.fat -F 32 "$efi_partition"
   # If Windows is already installed and we're dual-booting
   else
-    local last_partition_number=$(/usr/bin/gdisk -l "$disk"|/usr/bin/tail -1|/usr/bin/awk '{print $1}')
+    local last_partition_number=$(/usr/bin/gdisk -l "$disk"|/usr/bin/awk '{print $1}')
     local boot_partition_number=$((last_partition_number + 1))
     local root_partition_number=$((boot_partition_number + 1))
     # Create the boot partition
@@ -45,12 +46,14 @@ pre_setup() {
   /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$data_partition" -q --type luks2 --batch-mode
   /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$data_partition" cryptroot --key-file=-
   /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
+  /usr/bin/mkfs.ext4 "$data_partition"
   /usr/bin/mount /dev/mapper/cryptroot /mnt
   /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
   /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
   /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
 }
 
+rest() {
 # For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
 pacstrap -K /mnt base base-devel git linux linux-firmware systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
@@ -296,11 +299,11 @@ usermod -a -G wheel testuser
 systemctl enable cups
 #drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
 #systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/"$drive"
+}
 
 main() {
   local luks_password="$1" eg "password123"
-  local data_partition=$4 # eg "/dev/sda2"
-  local boot_partition=$5 # eg "/dev/sda1"
+  pre_setup "$luks_password"
 }
 
 main $1 $2 $3 $4 $5
