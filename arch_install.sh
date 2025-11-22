@@ -1,23 +1,59 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
-loadkeys us
-setfont Lat2-Terminus16
-timedatectl set-timezone America/Chicago
-timedatectl set-ntp true
-sgdisk --zap-all /dev/sda
-sgdisk -n1:0:+1G -t1:ef00 -c1:"EFI" /dev/sda
-sgdisk -n2:0:0   -t2:8304 -c2:"ROOT" /dev/sda
-echo -n "password" | cryptsetup luksFormat /dev/sda2 -q --type luks2 --batch-mode
-echo -n "password" | cryptsetup open /dev/sda2 cryptroot --key-file=-
-mkfs.btrfs -L archlinux /dev/mapper/cryptroot
-mount /dev/mapper/cryptroot /mnt
-mkfs.fat -F 32 /dev/sda1
-mount -o umask=0077 --mkdir /dev/sda1 /mnt/boot
+pre_setup() {
+  local luks_password=$1
+  local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print $1}')
+  /usr/bin/loadkeys us
+  /usr/bin/setfont Lat2-Terminus16
+  /usr/bin/timedatectl set-timezone America/Chicago
+  /usr/bin/timedatectl set-ntp true
+  # Enable 32-bit repos for Steam
+  /usr/bin/sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
+  /usr/bin/sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
+  # Check if the disk already has partitions or if this is a totally blank disk
+  local number_partitions=$(/usr/bin/lsblk|/usr/bin/grep -c part || true)
+  # If Arch will be the only OS on the system
+  if [ "$number_partitions" == "0" ]
+  then
+    # Erase the disk
+    /usr/bin/sgdisk --zap-all "$disk"
+    # Create the EFI partition
+    /usr/bin/sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$disk"
+    # Create the boot partition
+    /usr/bin/sgdisk -n 2:0:+100M -t 2:8300 "$disk"
+    # Create the root partition
+    /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
+    # Identify and format the EFI partition
+    local efi_partition=$(/usr/bin/lsblk -f|/usr/bin/grep EFI|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
+    /usr/bin/mkfs.fat -F 32 "$efi_partition"
+  # If Windows is already installed and we're dual-booting
+  else
+    local last_partition_number=$(/usr/bin/gdisk -l "$disk"|/usr/bin/tail -1|/usr/bin/awk '{print $1}')
+    local boot_partition_number=$((last_partition_number + 1))
+    local root_partition_number=$((boot_partition_number + 1))
+    # Create the boot partition
+    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":ef00 "$disk"
+    # Create the root partition
+    /usr/bin/sgdisk -n "$root_partition_number":0:0 -t "$root_partition_number":8304 -c "$root_partition_number":"ROOT" "$disk"
+    # Identify the EFI partition
+    local efi_partition=$(/usr/bin/lsblk -f|/usr/bin/grep FAT32|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
+  fi
+  local boot_partition=$(/usr/bin/lsblk -f|/usr/bin/grep ext4|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
+  local data_partition=$(/usr/bin/lsblk -f|/usr/bin/grep ROOT|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
+  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$data_partition" -q --type luks2 --batch-mode
+  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$data_partition" cryptroot --key-file=-
+  /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
+  /usr/bin/mount /dev/mapper/cryptroot /mnt
+  /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
+  /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
+  /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
+}
+
 # For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
-sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
-sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-pacstrap -K /mnt base base-devel git linux linux-firmware systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
+pacstrap -K /mnt base base-devel git linux linux-firmware systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
@@ -257,7 +293,14 @@ unlink /bin/sh
 ln -s dash /bin/sh
 echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 usermod -a -G wheel testuser
-pacman -S --noconfirm cups gutenprint
 systemctl enable cups
 #drive=$(lsblk|grep -B 1 crypt|head -1|awk -F '─' '{print $2}'|awk '{print $1}')
 #systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 /dev/"$drive"
+
+main() {
+  local luks_password="$1" eg "password123"
+  local data_partition=$4 # eg "/dev/sda2"
+  local boot_partition=$5 # eg "/dev/sda1"
+}
+
+main $1 $2 $3 $4 $5
