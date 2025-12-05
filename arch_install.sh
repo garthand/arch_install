@@ -58,8 +58,6 @@ pre_setup() {
   /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
   # Install the base system
   /usr/bin/pacstrap -K /mnt base linux linux-firmware
-  # Clean out the old fstab
-  /usr/bin/rm -f /mnt/etc/fstab
   # Generate a clean fstab with the boot, efi and root partitions
   /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
 }
