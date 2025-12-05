@@ -42,15 +42,25 @@ pre_setup() {
   fi
   local boot_partition=$(/usr/bin/blkid|/usr/bin/grep BOOT|/usr/bin/awk -F ':' '{print $1}')
   local root_partition=$(/usr/bin/blkid|/usr/bin/grep ROOT|/usr/bin/awk -F ':' '{print $1}')
+  # Ecrypt the root partition
   /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
+  # Unlock the root partition
   /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$root_partition" cryptroot --key-file=-
+  # Format the root partition
   /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
+  # Format the boot partition
   /usr/bin/mkfs.ext4 "$boot_partition"
+  # Mount the root partition
   /usr/bin/mount /dev/mapper/cryptroot /mnt
+  # Mount boot partition
   /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
+  # Mount EFI partition
   /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
+  # Install the base system
   /usr/bin/pacstrap -K /mnt base linux linux-firmware
+  # Clean out the old fstab
   /usr/bin/rm -f /mnt/etc/fstab
+  # Generate a clean fstab with the boot, efi and root partitions
   /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
 }
 
