@@ -26,8 +26,7 @@ pre_setup() {
     # Create the root partition
     /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
     # Identify and format the EFI partition
-    # TODO: This doesn't work for all disks. Works for sda1 sda2, etc but nvmes are nvmen0p1. Need a better tool than gdisk
-    local efi_partition=$(/usr/bin/gdisk -l "$disk"|/usr/bin/grep EFI|/usr/bin/awk -v disk="$disk" '{print disk $1}')
+    local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
     /usr/bin/mkfs.fat -F 32 "$efi_partition"
   # If Windows is already installed and we're dual-booting
   else
@@ -35,18 +34,18 @@ pre_setup() {
     local boot_partition_number=$((last_partition_number + 1))
     local root_partition_number=$((boot_partition_number + 1))
     # Create the boot partition
-    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":ef00 "$disk"
+    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":8300 -c "$boot_partition_number":"BOOT" "$disk"
     # Create the root partition
     /usr/bin/sgdisk -n "$root_partition_number":0:0 -t "$root_partition_number":8304 -c "$root_partition_number":"ROOT" "$disk"
     # Identify the EFI partition
-    local efi_partition=$(/usr/bin/lsblk -f|/usr/bin/grep FAT32|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
+    local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
   fi
-  local boot_partition=$(/usr/bin/lsblk -f|/usr/bin/grep ext4|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
-  local data_partition=$(/usr/bin/lsblk -f|/usr/bin/grep ROOT|/usr/bin/awk '{print $1}'|/usr/bin/awk -F '─' '{print $2}')
-  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$data_partition" -q --type luks2 --batch-mode
-  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$data_partition" cryptroot --key-file=-
+  local boot_partition=$(/usr/bin/blkid|/usr/bin/grep BOOT|/usr/bin/awk -F ':' '{print $1}')
+  local root_partition=$(/usr/bin/blkid|/usr/bin/grep ROOT|/usr/bin/awk -F ':' '{print $1}')
+  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
+  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$root_partition" cryptroot --key-file=-
   /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
-  /usr/bin/mkfs.ext4 "$data_partition"
+  /usr/bin/mkfs.ext4 "$boot_partition"
   /usr/bin/mount /dev/mapper/cryptroot /mnt
   /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
   /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
@@ -306,4 +305,4 @@ main() {
   pre_setup "$luks_password"
 }
 
-main $1 $2 $3 $4 $5
+main $1
