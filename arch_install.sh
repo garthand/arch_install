@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-pre_setup() {
+drive_partitioning() {
   local luks_password=$1
   local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print "/dev/" $1}')
   /usr/bin/loadkeys us
@@ -48,17 +48,17 @@ pre_setup() {
   /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$root_partition" cryptroot --key-file=-
   # Format the root partition
   /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
-  # Format the boot partition
-  /usr/bin/mkfs.ext4 "$boot_partition"
   # Mount the root partition
   /usr/bin/mount /dev/mapper/cryptroot /mnt
+  # Format the boot partition
+  /usr/bin/mkfs.ext4 "$boot_partition"
   # Mount boot partition
   /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
   # Mount EFI partition
   /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
   # Install the base system
   /usr/bin/pacstrap -K /mnt base linux linux-firmware
-  # Generate a clean fstab with the boot, efi and root partitions
+  # Generate a clean fstab with the boot, EFI and root partitions
   /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
 }
 
@@ -311,8 +311,8 @@ systemctl enable cups
 }
 
 main() {
-  local luks_password="$1" eg "password123"
-  pre_setup "$luks_password"
+  local luks_password="$1"
+  drive_partitioning "$luks_password"
 }
 
 main $1
