@@ -6,7 +6,7 @@ drive_partitioning() {
   local luks_password=$1
   local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print "/dev/" $1}')
   /usr/bin/loadkeys us
-  /usr/bin/setfont Lat2-Terminus16
+  /usr/bin/setfont eurlatgr
   /usr/bin/timedatectl set-timezone America/Chicago
   /usr/bin/timedatectl set-ntp true
   # Enable 32-bit repos for Steam
@@ -80,7 +80,7 @@ hwclock --systohc
 localectl set-keymap us
 cat << EOF > /etc/vconsole.conf
 KEYMAP=us
-FONT=Lat2-Terminus16
+FONT=eurlatgr
 EOF
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
