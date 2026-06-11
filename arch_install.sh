@@ -1,71 +1,99 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
+
+read_input() {
+  local prompt=$1
+  local mode=$2
+  local target_var=$3
+  local answer=""
+  local answer_confirmation=""
+  local try_again=true
+  while [ "$try_again" = true ]
+  do
+    try_again=false
+    read -rs -p "$prompt" answer
+    printf "\n">&2
+    if [ "$mode" == "password" ]
+      then
+        read -rs -p "Please re-type your password:" answer_confirmation
+        printf "\n">&2
+        if [ "$answer" != "$answer_confirmation" ]
+        then
+          try_again=true
+          printf "First and second attempt to type password do not match. Please try again.\n">&2
+        fi
+    fi
+  done
+  printf -v "$target_var" "%s" "$answer"
+}
+
+prepare_environment() {
+  loadkeys us
+  setfont eurlatgr
+  timedatectl set-timezone America/Chicago
+  timedatectl set-ntp true
+  # Enable 32-bit repos for Steam
+  sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
+  sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
+}
 
 drive_partitioning() {
   local luks_password=$1
-  local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print "/dev/" $1}')
-  /usr/bin/loadkeys us
-  /usr/bin/setfont eurlatgr
-  /usr/bin/timedatectl set-timezone America/Chicago
-  /usr/bin/timedatectl set-ntp true
-  # Enable 32-bit repos for Steam
-  /usr/bin/sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
-  /usr/bin/sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
+  local disk=$(lsblk|grep disk|awk '{print "/dev/" $1}')
   # Check if the disk already has partitions or if this is a totally blank disk
-  local number_partitions=$(/usr/bin/lsblk|/usr/bin/grep -c part || true)
+  local number_partitions=$(lsblk|grep -c part || true)
   # If Arch will be the only OS on the system
   if [ "$number_partitions" == "0" ]
   then
     # Erase the disk
-    /usr/bin/sgdisk --zap-all "$disk"
+    sgdisk --zap-all "$disk"
     # Create the EFI partition
-    /usr/bin/sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$disk"
+    sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$disk"
     # Create the boot partition
-    /usr/bin/sgdisk -n 2:0:+100M -t 2:8300 -c 2:"BOOT" "$disk"
+    sgdisk -n 2:0:+100M -t 2:8300 -c 2:"BOOT" "$disk"
     # Create the root partition
-    /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
+    sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
     # Identify and format the EFI partition
-    local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
-    /usr/bin/mkfs.fat -F 32 "$efi_partition"
+    local efi_partition=$(blkid|grep EFI|awk -F ':' '{print $1}')
+    mkfs.fat -F 32 "$efi_partition"
   # If Windows is already installed and we're dual-booting
   else
-    local last_partition_number=$(/usr/bin/gdisk -l "$disk"|/usr/bin/awk '{print $1}')
+    local last_partition_number=$(gdisk -l "$disk"|awk '{print $1}')
     local boot_partition_number=$((last_partition_number + 1))
     local root_partition_number=$((boot_partition_number + 1))
     # Create the boot partition
-    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":8300 -c "$boot_partition_number":"BOOT" "$disk"
+    sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":8300 -c "$boot_partition_number":"BOOT" "$disk"
     # Create the root partition
-    /usr/bin/sgdisk -n "$root_partition_number":0:0 -t "$root_partition_number":8304 -c "$root_partition_number":"ROOT" "$disk"
+    sgdisk -n "$root_partition_number":0:0 -t "$root_partition_number":8304 -c "$root_partition_number":"ROOT" "$disk"
     # Identify the EFI partition
-    local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
+    local efi_partition=$(blkid|grep EFI|awk -F ':' '{print $1}')
   fi
-  local boot_partition=$(/usr/bin/blkid|/usr/bin/grep BOOT|/usr/bin/awk -F ':' '{print $1}')
-  local root_partition=$(/usr/bin/blkid|/usr/bin/grep ROOT|/usr/bin/awk -F ':' '{print $1}')
+  local boot_partition=$(blkid|grep BOOT|awk -F ':' '{print $1}')
+  local root_partition=$(blkid|grep ROOT|awk -F ':' '{print $1}')
   # Ecrypt the root partition
-  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
+  echo -n "$luks_password" | cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
   # Unlock the root partition
-  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$root_partition" cryptroot --key-file=-
+  echo -n "$luks_password" | cryptsetup open "$root_partition" cryptroot --key-file=-
   # Format the root partition
-  /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
+  mkfs.btrfs -L archlinux /dev/mapper/cryptroot
   # Mount the root partition
-  /usr/bin/mount /dev/mapper/cryptroot /mnt
+  mount /dev/mapper/cryptroot /mnt
   # Format the boot partition
-  /usr/bin/mkfs.ext4 "$boot_partition"
+  mkfs.ext4 "$boot_partition"
   # Mount boot partition
-  /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
+  mount --mkdir "$boot_partition" /mnt/boot
   # Mount EFI partition
-  /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
+  mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
   # Install the base system
-  /usr/bin/pacstrap -K /mnt base linux linux-firmware
+  pacstrap -K /mnt base linux linux-firmware
   # Generate a clean fstab with the boot, EFI and root partitions
-  /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
+  genfstab -U /mnt >> /mnt/etc/fstab
 }
 
 rest() {
 # For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
-pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
+pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 arch-chroot /mnt
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
@@ -311,8 +339,16 @@ systemctl enable cups
 }
 
 main() {
-  local luks_password="$1"
+  local luks_password
+  local username
+  local full_name
+  local account_passwords
+  read_input "Please provide a LUKS password:" "password" "luks_password"
+  read_input "Please provide a username for your account:" "username" "username"
+  read_input "Please provide your name as you wish it to be displayed:" "username" "full_name"
+  read_input "Please provide a password for your account:" "password" "account_passwords"
+  prepare_environment
   drive_partitioning "$luks_password"
 }
 
-main $1
+main
