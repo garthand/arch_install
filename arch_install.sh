@@ -353,6 +353,7 @@ main() {
   prepare_environment
   drive_partitioning "$luks_password"
   write_pacman_hooks
+  write_kernel_configs
   install_base_packages
   generate_chroot_script
   execute_chroot "$username" "$full_name" "$account_password"
