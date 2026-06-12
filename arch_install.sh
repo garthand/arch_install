@@ -80,8 +80,7 @@ SizeMaxBytes=1G
 EOF
     
     # Wipe the disk and create the new GPT table and partitions
-    sgdisk --zap-all "$disk"
-    systemd-repart --empty=create --definitions=/tmp/repart.d --dry-run=no "$disk"
+    systemd-repart --empty=force --definitions=/tmp/repart.d --dry-run=no "$disk"
 
     # Identify and format the EFI partition
     efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
