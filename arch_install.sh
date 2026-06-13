@@ -332,6 +332,7 @@ WantedBy=multi-user.target
 EOF
 
 systemctl enable firstboot-pcrlock.service
+bootctl install
 pacman -S --noconfirm linux
 CHROOT_EOF
   chmod +x /mnt/tmp/chroot_setup.sh
