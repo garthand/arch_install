@@ -108,7 +108,7 @@ EOF
   mount /dev/mapper/cryptroot /mnt
   
   # Format the boot partition
-  mkfs.ext4 "$boot_partition"
+  mkfs.fat -F 32 "$boot_partition"
   mount --mkdir "$boot_partition" /mnt/boot
   
   # Mount EFI partition
@@ -175,9 +175,10 @@ uki_generator=ukify
 EOF
   cat << EOF > /mnt/etc/kernel/uki.conf
 [UKI]
+SecureBootSigningTool=systemd-sbsign
+SignKernel=true
 SecureBootPrivateKey=/etc/kernel/secure-boot-private-key.pem
 SecureBootCertificate=/etc/kernel/secure-boot-certificate.pem
-SignTool=systemd-sbsign
 EOF
 }
 
@@ -278,7 +279,7 @@ flatpak install -y com.heroicgameslauncher.hgl
 heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '/' '{print $3}')
 flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
 flatpak install -y com.discordapp.Discord/x86_64/stable
-systemctl enable sddm
+systemctl enable plasmalogin
 systemctl enable firewalld
 firewall-offline-cmd --new-zone=ArchWorkstation
 firewall-offline-cmd --zone=ArchWorkstation --set-description="Unsolicited incoming network packets are rejected..."
