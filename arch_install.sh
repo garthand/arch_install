@@ -40,6 +40,7 @@ drive_partitioning() {
     # Identify the EFI partition
     local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
   fi
+  /usr/bin/udevadm settle
   local boot_partition=$(/usr/bin/blkid|/usr/bin/grep BOOT|/usr/bin/awk -F ':' '{print $1}')
   local root_partition=$(/usr/bin/blkid|/usr/bin/grep ROOT|/usr/bin/awk -F ':' '{print $1}')
   # Ecrypt the root partition
@@ -53,9 +54,9 @@ drive_partitioning() {
   # Format the boot partition
   /usr/bin/mkfs.fat -F 32 "$boot_partition"
   # Mount boot partition
-  /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
+  /usr/bin/mount -t vfat --mkdir "$boot_partition" /mnt/boot
   # Mount EFI partition
-  /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/EFI
+  /usr/bin/mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/boot/EFI
   # Install the base system
   /usr/bin/pacstrap -K /mnt base linux linux-firmware
   # Generate a clean fstab with the boot, EFI and root partitions
