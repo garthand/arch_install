@@ -51,11 +51,11 @@ drive_partitioning() {
   # Mount the root partition
   /usr/bin/mount /dev/mapper/cryptroot /mnt
   # Format the boot partition
-  /usr/bin/mkfs.ext4 "$boot_partition"
+  /usr/bin/mkfs.fat -F 32 "$boot_partition"
   # Mount boot partition
   /usr/bin/mount --mkdir "$boot_partition" /mnt/boot
   # Mount EFI partition
-  /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/efi
+  /usr/bin/mount -o umask=0077 --mkdir "$efi_partition" /mnt/boot/EFI
   # Install the base system
   /usr/bin/pacstrap -K /mnt base linux linux-firmware
   # Generate a clean fstab with the boot, EFI and root partitions
