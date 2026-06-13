@@ -171,13 +171,14 @@ EOF
 
 write_kernel_configs() {
   uuid=$(blkid|grep LUKS|awk -F '"' '{print $2}')
-  mkdir -p /etc/kernel
+  mkdir -p /mnt/etc/kernel
  cat << EOF > /mnt/etc/kernel/cmdline
 rd.luks.name=UUID=${uuid}=cryptroot root=/dev/mapper/cryptroot rw splash quiet
 EOF
   cat << EOF > /mnt/etc/kernel/install.conf
 layout=uki
 uki_generator=ukify
+initrd_generator=dracut
 EOF
   cat << EOF > /mnt/etc/kernel/uki.conf
 [UKI]
@@ -192,7 +193,7 @@ install_base_packages() {
   # For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
   # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
   pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
-  ln -sf ../run/NetworkManager/stub-resolv.conf /mnt/etc/resolv.conf
+  ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 }
 
 generate_chroot_script() {
