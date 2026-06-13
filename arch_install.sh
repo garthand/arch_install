@@ -349,6 +349,11 @@ heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '
 flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
 flatpak install -y com.discordapp.Discord/x86_64/stable
 #systemctl enable plasmalogin
+mkdir -p /etc/sddm.conf.d
+cat << 'EOF' > /etc/sddm.conf.d/uid.conf
+[Users]
+MaximumUid=65000
+EOF
 systemctl enable sddm
 systemctl enable firewalld
 firewall-offline-cmd --new-zone=ArchWorkstation
