@@ -20,9 +20,9 @@ drive_partitioning() {
     # Erase the disk
     /usr/bin/sgdisk --zap-all "$disk"
     # Create the EFI partition
-    /usr/bin/sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$disk"
+    /usr/bin/sgdisk -n 1:0:+2G -t 1:ef00 -c 1:"EFI" "$disk"
     # Create the boot partition
-    /usr/bin/sgdisk -n 2:0:+100M -t 2:8300 -c 2:"BOOT" "$disk"
+    /usr/bin/sgdisk -n 2:0:+1G -t 2:8300 -c 2:"BOOT" "$disk"
     # Create the root partition
     /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
     # Identify and format the EFI partition
