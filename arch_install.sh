@@ -66,9 +66,9 @@ drive_partitioning() {
 rest() {
 # For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
-pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools steam gamemode lib32-gamemode lutris flatpak dash firewalld firefox libreoffice-fresh tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
+pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools gamemode lib32-gamemode lutris flatpak dash firewalld tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
-arch-chroot /mnt
+exit
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
 sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
 plymouth-set-default-theme spinfinity
@@ -157,9 +157,6 @@ echo "alias ll='ls -l' 2>/dev/null" > /etc/profile.d/ll.sh
 useradd testuser -m -G wheel -s "/bin/bash" -c "Test User" -p $(openssl passwd -6 "password")
 # Symlink Steam Proton to Heroic Games Launcher
 flatpak install -y com.heroicgameslauncher.hgl
-ln -s ~/.steam/steam/steamapps/common/Proton\ -\ Experimental/ ~/.var/app/com.heroicgameslauncher.hgl/config/heroic/tools/proton/Steam-Proton-Experimental
-# Symlink GE Proton to Steam
-ln -s ~/.var/app/com.heroicgameslauncher.hgl/config/heroic/tools/proton/GE-Proton-latest/ ~/.steam/steam/compatibilitytools.d/GE-Proton-latest
 # Install the right version of gamescope for Heroic Games Launcher
 heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '/' '{print $3}')
 flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
@@ -314,6 +311,7 @@ systemctl enable cups
 main() {
   local luks_password="$1"
   drive_partitioning "$luks_password"
+  rest
 }
 
 main $1
