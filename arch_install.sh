@@ -54,7 +54,7 @@ drive_partitioning() {
   # Format the boot partition
   /usr/bin/mkfs.fat -F 32 "$boot_partition"
   # Mount boot partition
-  /usr/bin/mount -t vfat --mkdir "$boot_partition" /mnt/boot
+  /usr/bin/mount -t vfat -o umask=0077 --mkdir "$boot_partition" /mnt/boot
   # Mount EFI partition
   /usr/bin/mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/boot/EFI
   # Install the base system
@@ -66,7 +66,7 @@ drive_partitioning() {
 rest() {
 # For nvidia: nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-firmware-nvidia
 # For AMD: vulkan-radeon lib32-vulkan-radeon linux-firmware-amdgpu
-pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools gamemode lib32-gamemode lutris flatpak dash firewalld tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
+pacstrap -K /mnt base-devel git systemd-ukify vim plymouth amd-ucode pipewire-jack tesseract-data-eng noto-fonts noto-fonts-cjk noto-fonts-emoji xdg-desktop-portal-kde qt6-multimedia-ffmpeg man-db man-pages texinfo sof-firmware btrfs-progs cryptsetup sbctl dracut sudo zram-generator rpcbind which cups gutenprint xorg-xwayland vulkan-tools firewalld tuned mesa lib32-mesa pipewire wireplumber networkmanager plasma-meta system-config-printer tuned-ppd konsole dolphin kate skanpage gwenview plasma-systemmonitor khelpcenter sweeper partitionmanager kolourpaint ksystemlog isoimagewriter ktorrent ark kcalc spectacle hunspell hunspell-en_us 
 ln -sf ../run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
 exit
 sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
@@ -155,13 +155,7 @@ ln -s /usr/bin/vim /usr/bin/vi
 echo "alias ll='ls -l' 2>/dev/null" > /etc/profile.d/ll.sh
 #homectl create testuser --storage=directory --group=testuser --member-of=wheel --shell=/bin/bash --real-name="Test User" --password
 useradd testuser -m -G wheel -s "/bin/bash" -c "Test User" -p $(openssl passwd -6 "password")
-# Symlink Steam Proton to Heroic Games Launcher
-flatpak install -y com.heroicgameslauncher.hgl
-# Install the right version of gamescope for Heroic Games Launcher
-heroic_runtime=$(flatpak list --columns=application,runtime|grep heroic|awk -F '/' '{print $3}')
-flatpak install -y flathub org.freedesktop.Platform.VulkanLayer.gamescope//"$heroic_runtime"
-flatpak install -y com.discordapp.Discord/x86_64/stable
-systemctl enable sddm
+systemctl enable plasmalogin
 systemctl enable firewalld
 cat << EOF > /etc/firewalld/firewalld-workstation.conf
 # firewalld config file
