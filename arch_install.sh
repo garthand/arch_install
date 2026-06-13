@@ -22,7 +22,7 @@ drive_partitioning() {
     # Create the EFI partition
     /usr/bin/sgdisk -n 1:0:+2G -t 1:ef00 -c 1:"EFI" "$disk"
     # Create the boot partition
-    /usr/bin/sgdisk -n 2:0:+1G -t 2:8300 -c 2:"BOOT" "$disk"
+    /usr/bin/sgdisk -n 2:0:+1G -t 2:ea00 -c 2:"BOOT" "$disk"
     # Create the root partition
     /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
     # Identify and format the EFI partition
@@ -34,7 +34,7 @@ drive_partitioning() {
     local boot_partition_number=$((last_partition_number + 1))
     local root_partition_number=$((boot_partition_number + 1))
     # Create the boot partition
-    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":8300 -c "$boot_partition_number":"BOOT" "$disk"
+    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":ea00 -c "$boot_partition_number":"BOOT" "$disk"
     # Create the root partition
     /usr/bin/sgdisk -n "$root_partition_number":0:0 -t "$root_partition_number":8304 -c "$root_partition_number":"ROOT" "$disk"
     # Identify the EFI partition
@@ -56,7 +56,7 @@ drive_partitioning() {
   # Mount boot partition
   /usr/bin/mount -t vfat -o umask=0077 --mkdir "$boot_partition" /mnt/boot
   # Mount EFI partition
-  /usr/bin/mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/boot/EFI
+  /usr/bin/mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/efi
   # Install the base system
   /usr/bin/pacstrap -K /mnt base linux linux-firmware
   # Generate a clean fstab with the boot, EFI and root partitions
@@ -147,6 +147,7 @@ kernel_version=$(ls /usr/lib/modules)
 bootctl install
 dracut --kver "$kernel_version" --force /boot/initramfs-linux.img
 # Can add module.sig_enforce=1 modprobe.blacklist=nouveau if wanted
+mkdir -p /boot/EFI/Linux
 ukify build --linux /boot/vmlinuz-linux --initrd /boot/initramfs-linux.img --cmdline "rd.luks.name=UUID=$uuid=cryptroot root=/dev/mapper/cryptroot rw splash quiet" --output /boot/EFI/Linux/linux-arch.efi --sign-kernel --secureboot-private-key=/etc/kernel/secure-boot-private-key.pem --secureboot-certificate=/etc/kernel/secure-boot-certificate.pem --signtool=systemd-sbsign --uname=$kernel_version
 pacman -S --noconfirm systemd
 bootctl install
