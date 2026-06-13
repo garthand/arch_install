@@ -82,6 +82,9 @@ EOF
     # Wipe the disk and create the new GPT table and partitions
     systemd-repart --empty=force --definitions=/tmp/repart.d --dry-run=no "$disk"
 
+    # MUST WAIT for the kernel to recognize the new partitions
+    udevadm settle
+
     # Identify and format the EFI partition
     efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
     mkfs.fat -F 32 "$efi_partition"
@@ -89,6 +92,9 @@ EOF
     # Dual boot: Just append the BOOT and ROOT partitions to the unallocated space
     systemd-repart --definitions=/tmp/repart.d --dry-run=no "$disk"
     
+    # MUST WAIT for the kernel to recognize the new partitions
+    udevadm settle
+
     # Identify existing EFI partition
     efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
   fi
@@ -107,12 +113,12 @@ EOF
   mkfs.btrfs -L archlinux /dev/mapper/cryptroot
   mount /dev/mapper/cryptroot /mnt
   
-  # Format the boot partition
+  # Format and explicitly mount the boot partition as vfat
   mkfs.fat -F 32 "$boot_partition"
-  mount --mkdir "$boot_partition" /mnt/boot
+  mount -t vfat --mkdir "$boot_partition" /mnt/boot
   
-  # Mount EFI partition
-  mount -o umask=0077 --mkdir "$efi_partition" /mnt/efi
+  # Explicitly mount EFI partition as vfat
+  mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/efi
   
   # Install the base system
   pacstrap -K /mnt base linux linux-firmware
