@@ -2,7 +2,7 @@ set -euo pipefail
 #!/bin/bash
 IFS=$'\n\t'
 
-drive_partitioning() {
+drive_partitioning_old() {
   local luks_password=$1
   local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print "/dev/" $1}')
   /usr/bin/loadkeys us
@@ -99,95 +99,97 @@ prepare_environment() {
   sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
 }
 
-#drive_partitioning() {
-#  local luks_password=$1
-#  local disk
-#  local number_partitions
-#  local efi_partition
-#  local boot_partition
-#  local root_partition
-#
-#  disk=$(lsblk -dno NAME | grep -v loop | head -n 1 | awk '{print "/dev/" $1}')
-#  number_partitions=$(lsblk | grep -c part || true)
-#
-#  # Create a temporary directory for our partition definitions
-#  mkdir -p /tmp/repart.d
-#
-#  # Define the BOOT partition (Standard systemd XBOOTLDR partition)
-#  cat << 'EOF' > /tmp/repart.d/20-boot.conf
-#[Partition]
-#Type=xbootldr
-#Label=BOOT
-#SizeMinBytes=1G
-#SizeMaxBytes=1G
-#EOF
-#
-#  # Define the ROOT partition (Takes up the rest of the disk)
-#  cat << 'EOF' > /tmp/repart.d/30-root.conf
-#[Partition]
-#Type=root-x86-64
-#Label=ROOT
-## Omitting SizeMinBytes/SizeMaxBytes tells it to use all remaining unallocated space
-#EOF
-#
-#  # Handle Single vs Dual Boot Execution
-#  if [ "$number_partitions" == "0" ]; then
-#    # Blank disk: Define the EFI partition
-#    cat << 'EOF' > /tmp/repart.d/10-efi.conf
-#[Partition]
-#Type=esp
-#Label=EFI
-#SizeMinBytes=1G
-#SizeMaxBytes=1G
-#EOF
-#    
-#    # Wipe the disk and create the new GPT table and partitions
-#    systemd-repart --empty=force --definitions=/tmp/repart.d --dry-run=no "$disk"
-#
-#    # MUST WAIT for the kernel to recognize the new partitions
-#    udevadm settle
-#
-#    # Identify and format the EFI partition
-#    efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
-#    mkfs.fat -F 32 "$efi_partition"
-#  else
-#    # Dual boot: Just append the BOOT and ROOT partitions to the unallocated space
-#    systemd-repart --definitions=/tmp/repart.d --dry-run=no "$disk"
-#    
-#    # MUST WAIT for the kernel to recognize the new partitions
-#    udevadm settle
-#
-#    # Identify existing EFI partition
-#    efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
-#  fi
-#
-#  # Identify our newly created partitions
-#  boot_partition=$(blkid | grep BOOT | awk -F ':' '{print $1}')
-#  root_partition=$(blkid | grep ROOT | awk -F ':' '{print $1}')
-#
-#  # Encrypt the root partition
-#  echo -n "$luks_password" | cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
-#  
-#  # Unlock the root partition
-#  echo -n "$luks_password" | cryptsetup open "$root_partition" cryptroot --key-file=-
-#  
-#  # Format the root partition
-#  mkfs.btrfs -L archlinux /dev/mapper/cryptroot
-#  mount /dev/mapper/cryptroot /mnt
-#  
-#  # Format and explicitly mount the boot partition as vfat
-#  mkfs.fat -F 32 "$boot_partition"
-#  mount -t vfat --mkdir "$boot_partition" /mnt/boot
-#  
-#  # Explicitly mount EFI partition as vfat
-#  mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/efi
-#  
-#  # Install the base system
-#  pacstrap -K /mnt base linux linux-firmware
-#  
-#  # Clean up temporary definitions
-#  rm -rf /tmp/repart.d
-#}
+drive_partitioning() {
+  local luks_password=$1
+  local disk
+  local number_partitions
+  local efi_partition
+  local boot_partition
+  local root_partition
+
+  disk=$(lsblk -dno NAME | grep -v loop | head -n 1 | awk '{print "/dev/" $1}')
+  number_partitions=$(lsblk | grep -c part || true)
+
+  # Create a temporary directory for our partition definitions
+  mkdir -p /tmp/repart.d
+
+  # Define the BOOT partition (Standard systemd XBOOTLDR partition)
+  cat << 'EOF' > /tmp/repart.d/20-boot.conf
+[Partition]
+Type=xbootldr
+Label=BOOT
+SizeMinBytes=1G
+SizeMaxBytes=1G
+EOF
+
+  # Define the ROOT partition (Takes up the rest of the disk)
+  cat << 'EOF' > /tmp/repart.d/30-root.conf
+[Partition]
+Type=root-x86-64
+Label=ROOT
+# Omitting SizeMinBytes/SizeMaxBytes tells it to use all remaining unallocated space
+EOF
+
+  # Handle Single vs Dual Boot Execution
+  if [ "$number_partitions" == "0" ]; then
+    # Blank disk: Define the EFI partition
+    cat << 'EOF' > /tmp/repart.d/10-efi.conf
+[Partition]
+Type=esp
+Label=EFI
+SizeMinBytes=1G
+SizeMaxBytes=1G
+EOF
+    
+    # Wipe the disk and create the new GPT table and partitions
+    systemd-repart --empty=force --definitions=/tmp/repart.d --dry-run=no "$disk"
+
+    # MUST WAIT for the kernel to recognize the new partitions
+    udevadm settle
+
+    # Identify and format the EFI partition
+    efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
+    mkfs.fat -F 32 "$efi_partition"
+  else
+    # Dual boot: Just append the BOOT and ROOT partitions to the unallocated space
+    systemd-repart --definitions=/tmp/repart.d --dry-run=no "$disk"
+    
+    # MUST WAIT for the kernel to recognize the new partitions
+    udevadm settle
+
+    # Identify existing EFI partition
+    efi_partition=$(blkid | grep EFI | awk -F ':' '{print $1}')
+  fi
+
+  udevadm settle
+  
+  # Identify our newly created partitions
+  boot_partition=$(blkid | grep BOOT | awk -F ':' '{print $1}')
+  root_partition=$(blkid | grep ROOT | awk -F ':' '{print $1}')
+
+  # Encrypt the root partition
+  echo -n "$luks_password" | cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
+  
+  # Unlock the root partition
+  echo -n "$luks_password" | cryptsetup open "$root_partition" cryptroot --key-file=-
+  
+  # Format the root partition
+  mkfs.btrfs -L archlinux /dev/mapper/cryptroot
+  mount /dev/mapper/cryptroot /mnt
+  
+  # Format and explicitly mount the boot partition as vfat
+  mkfs.fat -F 32 "$boot_partition"
+  mount -t vfat -o umask=0077 --mkdir "$boot_partition" /mnt/boot
+  
+  # Explicitly mount EFI partition as vfat
+  mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/efi
+  
+  # Install the base system
+  pacstrap -K /mnt base linux linux-firmware
+  
+  # Clean up temporary definitions
+  rm -rf /tmp/repart.d
+}
 
 write_pacman_hooks() {
   mkdir -p /mnt/etc/pacman.d/hooks
