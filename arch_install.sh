@@ -2,67 +2,6 @@ set -euo pipefail
 #!/bin/bash
 IFS=$'\n\t'
 
-drive_partitioning_old() {
-  local luks_password=$1
-  local disk=$(/usr/bin/lsblk|/usr/bin/grep disk|/usr/bin/awk '{print "/dev/" $1}')
-  /usr/bin/loadkeys us
-  /usr/bin/setfont eurlatgr
-  /usr/bin/timedatectl set-timezone America/Chicago
-  /usr/bin/timedatectl set-ntp true
-  # Enable 32-bit repos for Steam
-  /usr/bin/sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
-  /usr/bin/sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-  # Check if the disk already has partitions or if this is a totally blank disk
-  local number_partitions=$(/usr/bin/lsblk|/usr/bin/grep -c part || true)
-  # If Arch will be the only OS on the system
-  if [ "$number_partitions" == "0" ]
-  then
-    # Erase the disk
-    /usr/bin/sgdisk --zap-all "$disk"
-    # Create the EFI partition
-    /usr/bin/sgdisk -n 1:0:+2G -t 1:ef00 -c 1:"EFI" "$disk"
-    # Create the boot partition
-    /usr/bin/sgdisk -n 2:0:+1G -t 2:ea00 -c 2:"BOOT" "$disk"
-    # Create the root partition
-    /usr/bin/sgdisk -n 3:0:0 -t 3:8304 -c 3:"ROOT" "$disk"
-    # Identify and format the EFI partition
-    local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
-    /usr/bin/mkfs.fat -F 32 "$efi_partition"
-  # If Windows is already installed and we're dual-booting
-  else
-    local last_partition_number=$(/usr/bin/gdisk -l "$disk"|/usr/bin/awk '{print $1}')
-    local boot_partition_number=$((last_partition_number + 1))
-    local root_partition_number=$((boot_partition_number + 1))
-    # Create the boot partition
-    /usr/bin/sgdisk -n "$boot_partition_number":0:+1G -t "$boot_partition_number":ea00 -c "$boot_partition_number":"BOOT" "$disk"
-    # Create the root partition
-    /usr/bin/sgdisk -n "$root_partition_number":0:0 -t "$root_partition_number":8304 -c "$root_partition_number":"ROOT" "$disk"
-    # Identify the EFI partition
-    local efi_partition=$(/usr/bin/blkid|/usr/bin/grep EFI|/usr/bin/awk -F ':' '{print $1}')
-  fi
-  /usr/bin/udevadm settle
-  local boot_partition=$(/usr/bin/blkid|/usr/bin/grep BOOT|/usr/bin/awk -F ':' '{print $1}')
-  local root_partition=$(/usr/bin/blkid|/usr/bin/grep ROOT|/usr/bin/awk -F ':' '{print $1}')
-  # Ecrypt the root partition
-  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup luksFormat "$root_partition" -q --type luks2 --batch-mode
-  # Unlock the root partition
-  /usr/bin/echo -n "$luks_password" | /usr/bin/cryptsetup open "$root_partition" cryptroot --key-file=-
-  # Format the root partition
-  /usr/bin/mkfs.btrfs -L archlinux /dev/mapper/cryptroot
-  # Mount the root partition
-  /usr/bin/mount /dev/mapper/cryptroot /mnt
-  # Format the boot partition
-  /usr/bin/mkfs.fat -F 32 "$boot_partition"
-  # Mount boot partition
-  /usr/bin/mount -t vfat -o umask=0077 --mkdir "$boot_partition" /mnt/boot
-  # Mount EFI partition
-  /usr/bin/mount -t vfat -o umask=0077 --mkdir "$efi_partition" /mnt/efi
-  # Install the base system
-  /usr/bin/pacstrap -K /mnt base linux linux-firmware
-  # Generate a clean fstab with the boot, EFI and root partitions
-  /usr/bin/genfstab -U /mnt >> /mnt/etc/fstab
-}
-
 read_input() {
   local prompt=$1
   local mode=$2
