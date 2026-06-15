@@ -275,7 +275,7 @@ ConditionPathExists=!/var/lib/systemd/home/$username.home
 [Service]
 Type=oneshot
 # Use the PASSWORD environment variable to bypass the interactive TTY prompt
-ExecStart=/bin/bash -c "PASSWORD='${account_password}' homectl create ${username} --storage=directory --group=${username} --member-of=wheel --shell=/bin/bash --real-name='${full_name}'"
+ExecStart=/bin/bash -c "NEWPASSWORD='${account_password}' homectl create ${username} --storage=directory --group=${username} --member-of=wheel --shell=/bin/bash --real-name='${full_name}'"
 # Delete this service file so the password isn't left on disk
 ExecStartPost=/usr/bin/rm /etc/systemd/system/firstboot-homed.service
 ExecStartPost=/usr/bin/systemctl disable firstboot-homed.service
@@ -359,14 +359,14 @@ finalize_installation() {
 }
 
 main() {
-  local luks_password="test"
-  local username="test"
-  local full_name="test"
-  local account_password="test"
-  #read_input "Please provide a LUKS password:" "password" "luks_password"
-  #read_input "Please provide a username for your account:" "username" "username"
-  #read_input "Please provide your name as you wish it to be displayed:" "username" "full_name"
-  #read_input "Please provide a password for your account:" "password" "account_password"
+  local luks_password
+  local username
+  local full_name=
+  local account_password
+  read_input "Please provide a LUKS password:" "password" "luks_password"
+  read_input "Please provide a username for your account:" "username" "username"
+  read_input "Please provide your name as you wish it to be displayed:" "username" "full_name"
+  read_input "Please provide a password for your account:" "password" "account_password"
   prepare_environment
   drive_partitioning "$luks_password"
   write_pacman_hooks
