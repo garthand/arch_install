@@ -5,7 +5,7 @@ Requires=systemd-homed.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c "NEWPASSWORD='${account_password}' homectl create ${username} --storage=directory --group=${username} --member-of=wheel --shell=/bin/bash --real-name='${full_name}'"
+ExecStart=/bin/bash -c "NEWPASSWORD='ACCOUNT_PASSWORD' homectl create USERNAME --storage=directory --group=USERNAME --member-of=wheel --shell=/bin/bash --real-name='FULL_NAME'"
 ExecStartPost=/usr/bin/rm /etc/systemd/system/firstboot-homed.service
 ExecStartPost=/usr/bin/systemctl disable firstboot-homed.service
 

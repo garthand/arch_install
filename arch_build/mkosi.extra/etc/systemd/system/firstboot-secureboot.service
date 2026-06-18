@@ -1,0 +1,14 @@
+[Unit]
+Description=Enroll Secure Boot Keys on First Boot
+After=multi-user.target
+
+[Service]
+Type=oneshot
+# Enroll the keys into the physical motherboard, including Microsoft's DBX
+ExecStart=/usr/bin/sbctl enroll-keys -m
+# Self-destruct the service
+ExecStartPost=/usr/bin/rm -f /etc/systemd/system/firstboot-secureboot.service
+ExecStartPost=/usr/bin/systemctl disable firstboot-secureboot.service
+
+[Install]
+WantedBy=multi-user.target

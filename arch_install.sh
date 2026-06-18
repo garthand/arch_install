@@ -359,11 +359,24 @@ finalize_installation() {
 }
 
 new() {
-  echo "$luks_password" > root.key
-  pacman -S sbctl
+  echo "$luks_password" > arch_build/root.key
+  pacman -Sy sbctl mkosi
   sbctl create-keys
-  mkdir -p mkosi.extra/var/lib/sbctl/
-  cp -r /var/lib/sbctl/keys mkosi.extra/var/lib/sbctl/keys
+  mkdir -p arch_build/mkosi.extra/var/lib/sbctl/
+  cp -r /var/lib/sbctl/keys arch_build/mkosi.extra/var/lib/sbctl/keys
+  sed -i "s|ACCOUNT_PASSWORD|$account_password|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
+  sed -i "s|USERNAME|$username|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
+  sed -i "s|FULL_NAME|$full_name|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
+  BUILD_VER=$(date +%Y.%m.%d)
+  # 1. Build the system extension FIRST
+  mkosi -C arch_devtools build --image-version="$BUILD_VER"
+  # 2. Inject the compiled extension directly into the Base OS's /var tree
+  mkdir -p arch_build/mkosi.extra/var/lib/extensions/
+  cp arch_devtools/mkosi.output/devtools_"$BUILD_VER".raw arch_build/mkosi.extra/var/lib/extensions/
+  # 3. Build the Base OS
+  mkosi -C arch_build build --image-version="$BUILD_VER"
+  # Flash the generated image to your main drive
+  dd if=arch_build/mkosi.output/arch_$BUILD_VER.raw of=/dev/nvme0n1 bs=4M status=progress
 }
 
 main() {
