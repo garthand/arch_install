@@ -358,10 +358,18 @@ finalize_installation() {
   systemctl reboot
 }
 
+new() {
+  echo "$luks_password" > root.key
+  pacman -S sbctl
+  sbctl create-keys
+  mkdir -p mkosi.extra/var/lib/sbctl/
+  cp -r /var/lib/sbctl/keys mkosi.extra/var/lib/sbctl/keys
+}
+
 main() {
   local luks_password
   local username
-  local full_name=
+  local full_name
   local account_password
   read_input "Please provide a LUKS password:" "password" "luks_password"
   read_input "Please provide a username for your account:" "username" "username"

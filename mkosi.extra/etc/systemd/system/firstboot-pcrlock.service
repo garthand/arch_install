@@ -1,0 +1,13 @@
+[Unit]
+Description=First boot TPM policy generation and LUKS enrollment
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/firstboot-pcrlock.sh
+ExecStartPost=/usr/bin/rm -f /usr/local/bin/firstboot-pcrlock.sh
+ExecStartPost=/usr/bin/rm -f /etc/systemd/system/firstboot-pcrlock.service
+ExecStartPost=/usr/bin/systemctl disable firstboot-pcrlock.service
+
+[Install]
+WantedBy=multi-user.target
