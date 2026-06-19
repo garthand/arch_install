@@ -366,7 +366,7 @@ new() {
   chmod +x arch_build/mkosi.postinst.chroot
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
-  pacman -Sy sbctl mkosi cpio python-pefile systemd-ukify --noconfirm
+  pacman -Sy sbctl mkosi cpio python-pefile systemd-ukify erofs-utils --noconfirm
   sbctl create-keys
   mkdir -p arch_build/mkosi.extra/var/lib/sbctl/
   cp -r /var/lib/sbctl/keys arch_build/mkosi.extra/var/lib/sbctl/keys
