@@ -360,14 +360,8 @@ finalize_installation() {
 
 new() {
   mount -o remount,size=4G /run/archiso/cowspace
-  modprobe zram
-  zramctl /dev/zram0 --size 8G --algorithm zstd
-  mkswap /dev/zram0
-  swapon /dev/zram0
-  mkdir -p "$PWD/pacman_cache"
   mkdir -p "$PWD/mkosi_workspace"
-  mkdir -p /var/cache/pacman
-  mount --bind "$PWD/pacman_cache" /var/cache/pacman
+  mkdir -p /var/tmp
   mount --bind "$PWD/mkosi_workspace" /var/tmp
   chmod +x arch_build/mkosi.postinst.chroot
   echo "$luks_password" > arch_build/root.key
