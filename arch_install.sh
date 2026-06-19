@@ -370,16 +370,19 @@ new() {
   sed -i "s|USERNAME|$username|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   sed -i "s|FULL_NAME|$full_name|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   BUILD_VER=$(date +%Y.%m.%d)
-  # 1. Build the OS, then the system extension
-  mkosi -C arch_build build --image-version="$BUILD_VER"
+  # 1. The Ghost Build: Output the Base OS as a plain, unencrypted directory!
+  mkosi -C arch_build build --format=directory --output=unencrypted_base
+  # 2. Point the devtools config to the unencrypted ghost tree
+  sed -i "s|\[Content\]|\[Content\]\nBaseTrees=$PWD/arch_build/unencrypted_base|g" arch_devtools/mkosi.conf
+  # 3. Build the System Extension (Instant, because no LUKS decryption needed)
   mkosi -C arch_devtools build --image-version="$BUILD_VER"
-  # 2. Inject the compiled extension directly into the Base OS's /var tree
+  # 4. Inject the compiled extension into the Base OS's /var tree
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
-  cp "arch_devtools/devtools.raw" "arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
-  # 3. Build the Base OS
+  cp arch_devtools/devtools.raw "arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
+  # 5. The Final Build: Rebuild the Base OS as the final, encrypted disk image!
   mkosi -C arch_build build --image-version="$BUILD_VER"
-  # Flash the generated image to your main drive
-  #dd if="$PWD/arch_build/arch.raw" of=/dev/nvme0n1 bs=4M status=progress
+  # 6. Flash the generated image to your main drive
+  #dd if=arch_build/arch.raw of=/dev/nvme0n1 bs=4M status=progress
 }
 
 main() {
