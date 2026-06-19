@@ -360,7 +360,8 @@ finalize_installation() {
 
 new() {
   echo "$luks_password" > arch_build/root.key
-  pacman -Sy sbctl mkosi
+  chmod 600 arch_build/root.key
+  pacman -Sy sbctl mkosi cpio --noconfirm
   sbctl create-keys
   mkdir -p arch_build/mkosi.extra/var/lib/sbctl/
   cp -r /var/lib/sbctl/keys arch_build/mkosi.extra/var/lib/sbctl/keys
@@ -368,7 +369,8 @@ new() {
   sed -i "s|USERNAME|$username|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   sed -i "s|FULL_NAME|$full_name|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   BUILD_VER=$(date +%Y.%m.%d)
-  # 1. Build the system extension FIRST
+  # 1. Build the OS, then the system extension
+  mkdir -p arch_build/mkosi.extra/var/lib/extensions/
   mkosi -C arch_devtools build --image-version="$BUILD_VER"
   # 2. Inject the compiled extension directly into the Base OS's /var tree
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
