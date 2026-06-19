@@ -359,8 +359,7 @@ finalize_installation() {
 }
 
 new() {
-  sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
-  sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
+  chmod +x arch_build/mkosi.postinst.chroot
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
   pacman -Sy sbctl mkosi cpio --noconfirm

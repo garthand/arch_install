@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+
+# 1. Nuke the physical directory pacman just created
+rm -rf /home
+
+# 2. Ensure the persistent target exists
+mkdir -p /var/home
+
+# 3. Create the symlink safely from inside the OS
+ln -s var/home /home
