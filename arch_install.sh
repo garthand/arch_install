@@ -359,6 +359,8 @@ finalize_installation() {
 }
 
 new() {
+  sed -i '/^#\[multilib\]$/ {n; s/.*/Include = \/etc\/pacman\.d\/mirrorlist/}' /etc/pacman.conf
+  sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
   pacman -Sy sbctl mkosi cpio --noconfirm
@@ -370,7 +372,7 @@ new() {
   sed -i "s|FULL_NAME|$full_name|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   BUILD_VER=$(date +%Y.%m.%d)
   # 1. Build the OS, then the system extension
-  mkdir -p arch_build/mkosi.extra/var/lib/extensions/
+  mkosi -C arch_build build --image-version="$BUILD_VER"
   mkosi -C arch_devtools build --image-version="$BUILD_VER"
   # 2. Inject the compiled extension directly into the Base OS's /var tree
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
@@ -390,14 +392,15 @@ main() {
   read_input "Please provide a username for your account:" "username" "username"
   read_input "Please provide your name as you wish it to be displayed:" "username" "full_name"
   read_input "Please provide a password for your account:" "password" "account_password"
-  prepare_environment
-  drive_partitioning "$luks_password"
-  write_pacman_hooks
-  write_kernel_configs
-  install_base_packages
-  generate_chroot_script
-  execute_chroot "$username" "$full_name" "$account_password"
-  finalize_installation
+  new
+  #prepare_environment
+  #drive_partitioning "$luks_password"
+  #write_pacman_hooks
+  #write_kernel_configs
+  #install_base_packages
+  #generate_chroot_script
+  #execute_chroot "$username" "$full_name" "$account_password"
+  #finalize_installation
 }
 
 main
