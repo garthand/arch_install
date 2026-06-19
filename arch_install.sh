@@ -362,7 +362,7 @@ new() {
   chmod +x arch_build/mkosi.postinst.chroot
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
-  pacman -Sy sbctl mkosi cpio --noconfirm
+  pacman -Sy sbctl mkosi cpio python-pefile systemd-ukify --noconfirm
   sbctl create-keys
   mkdir -p arch_build/mkosi.extra/var/lib/sbctl/
   cp -r /var/lib/sbctl/keys arch_build/mkosi.extra/var/lib/sbctl/keys
@@ -372,14 +372,14 @@ new() {
   BUILD_VER=$(date +%Y.%m.%d)
   # 1. Build the OS, then the system extension
   mkosi -C arch_build build --image-version="$BUILD_VER"
-  mkosi -C arch_devtools build --image-version="$BUILD_VER"
+  mkosi -C arch_devtools build --image-version="$BUILD_VER" --base-trees="$PWD/arch_build/arch.raw"
   # 2. Inject the compiled extension directly into the Base OS's /var tree
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
-  cp arch_devtools/mkosi.output/devtools_"$BUILD_VER".raw arch_build/mkosi.extra/var/lib/extensions/
+  cp "$PWD/arch_devtools/devtools.raw" "$PWD/arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
   # 3. Build the Base OS
   mkosi -C arch_build build --image-version="$BUILD_VER"
   # Flash the generated image to your main drive
-  dd if=arch_build/mkosi.output/arch_$BUILD_VER.raw of=/dev/nvme0n1 bs=4M status=progress
+  #dd if="$PWD/arch_build/arch.raw" of=/dev/nvme0n1 bs=4M status=progress
 }
 
 main() {
