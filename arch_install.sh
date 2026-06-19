@@ -359,35 +359,53 @@ finalize_installation() {
 }
 
 new() {
+  # ==========================================
+  # 0. HOST SETUP & BIND MOUNT
   mount -o remount,size=4G /run/archiso/cowspace
+  
   mkdir -p "$PWD/mkosi_workspace"
   mkdir -p /var/tmp
   mount --bind "$PWD/mkosi_workspace" /var/tmp
+  # ==========================================
+  
   chmod +x arch_build/mkosi.postinst.chroot
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
+  
+  # Install dependencies (Including the EROFS packer)
   pacman -Sy sbctl mkosi cpio python-pefile systemd-ukify erofs-utils --noconfirm
+  
+  # Secure Boot setup
   sbctl create-keys
   mkdir -p arch_build/mkosi.extra/var/lib/sbctl/
   cp -r /var/lib/sbctl/keys arch_build/mkosi.extra/var/lib/sbctl/keys
+  
+  # User credentials
   sed -i "s|ACCOUNT_PASSWORD|$account_password|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   sed -i "s|USERNAME|$username|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
   sed -i "s|FULL_NAME|$full_name|g" arch_build/mkosi.extra/etc/systemd/system/firstboot-homed.service
+  
   BUILD_VER=$(date +%Y.%m.%d)
-  # 1. The Ghost Build: Output the Base OS as a plain, unencrypted directory!
+  
+  # 1. The Ghost Build
   mkosi -C arch_build build --format=directory --output=unencrypted_base
-  # 2. Point the devtools config to the unencrypted ghost tree
+  
+  # 2. Point devtools to the ghost tree
   sed -i "s|\[Content\]|\[Content\]\nBaseTrees=$PWD/arch_build/unencrypted_base|g" arch_devtools/mkosi.conf
-  # 3. Build the System Extension (Instant, because no LUKS decryption needed)
+  
+  # 3. Build the System Extension
   mkosi -C arch_devtools build --image-version="$BUILD_VER"
-  # 4. Inject the compiled extension into the Base OS's /var tree
+  
+  # 4. Inject the compiled extension
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
   cp arch_devtools/devtools.raw "arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
-  # 5. The Final Build: Rebuild the Base OS as the final, encrypted disk image!
+  
+  # ==========================================
+  # 5. THE FINAL BUILD (With forced cache wipe!)
+  echo "Wiping mkosi's internal cache to force a full OS build..."
   mkosi -C arch_build clean
   mkosi -C arch_build build --image-version="$BUILD_VER"
-  # 6. Flash the generated image to your main drive
-  #dd if=arch_build/arch.raw of=/dev/nvme0n1 bs=4M status=progress
+  # ==========================================
 }
 
 main() {
