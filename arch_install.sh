@@ -359,6 +359,11 @@ finalize_installation() {
 }
 
 new() {
+  mount -o remount,size=4G /run/archiso/cowspace
+  modprobe zram
+  zramctl /dev/zram0 --size 8G --algorithm zstd
+  mkswap /dev/zram0
+  swapon /dev/zram0
   mkdir -p "$PWD/pacman_cache"
   mkdir -p "$PWD/mkosi_workspace"
   mkdir -p /var/cache/pacman
