@@ -384,7 +384,8 @@ new() {
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
   cp arch_devtools/devtools.raw "arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
   # 5. The Final Build: Rebuild the Base OS as the final, encrypted disk image!
-  mkosi -C arch_build build --image-version="$BUILD_VER"
+  rm -f arch_build/arch.raw
+  mkosi -C arch_build build -f --image-version="$BUILD_VER"
   # 6. Flash the generated image to your main drive
   #dd if=arch_build/arch.raw of=/dev/nvme0n1 bs=4M status=progress
 }
