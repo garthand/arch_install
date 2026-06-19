@@ -372,10 +372,10 @@ new() {
   BUILD_VER=$(date +%Y.%m.%d)
   # 1. Build the OS, then the system extension
   mkosi -C arch_build build --image-version="$BUILD_VER"
-  mkosi -C arch_devtools build --image-version="$BUILD_VER" --base-trees="$PWD/arch_build/arch.raw"
+  mkosi -C arch_devtools build --image-version="$BUILD_VER"
   # 2. Inject the compiled extension directly into the Base OS's /var tree
   mkdir -p arch_build/mkosi.extra/var/lib/extensions/
-  cp "$PWD/arch_devtools/devtools.raw" "$PWD/arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
+  cp "arch_devtools/devtools.raw" "arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
   # 3. Build the Base OS
   mkosi -C arch_build build --image-version="$BUILD_VER"
   # Flash the generated image to your main drive
