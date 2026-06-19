@@ -359,6 +359,11 @@ finalize_installation() {
 }
 
 new() {
+  mkdir -p "$PWD/pacman_cache"
+  mkdir -p "$PWD/mkosi_workspace"
+  mkdir -p /var/cache/pacman
+  mount --bind "$PWD/pacman_cache" /var/cache/pacman
+  mount --bind "$PWD/mkosi_workspace" /var/tmp
   chmod +x arch_build/mkosi.postinst.chroot
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
