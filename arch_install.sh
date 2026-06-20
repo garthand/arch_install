@@ -372,7 +372,7 @@ new() {
   echo "$luks_password" > arch_build/root.key
   chmod 600 arch_build/root.key
   
-  # Install dependencies (Including the EROFS packer)
+  # Install dependencies
   pacman -Sy sbctl mkosi cpio python-pefile systemd-ukify erofs-utils --noconfirm
   
   # Secure Boot setup
@@ -401,9 +401,14 @@ new() {
   cp arch_devtools/devtools.raw "arch_build/mkosi.extra/var/lib/extensions/devtools_$BUILD_VER.raw"
   
   # ==========================================
-  # 5. THE FINAL BUILD (With forced cache wipe!)
-  echo "Wiping mkosi's internal cache to force a full OS build..."
+  # 5. THE FINAL BUILD (The Manual Override)
+  echo "Wiping mkosi's internal cache..."
   mkosi -C arch_build clean
+  
+  echo "Building the final OS files into a physical directory..."
+  mkosi -C arch_build build --format=directory --output=final_os_tree
+  
+  echo "Building the disk blueprint (partition layout)..."
   mkosi -C arch_build build --image-version="$BUILD_VER"
   # ==========================================
 }
