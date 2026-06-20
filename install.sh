@@ -405,8 +405,8 @@ new() {
   echo "Wiping mkosi's internal cache..."
   mkosi -C arch_build clean
   
-  #echo "Building the final OS files into a physical directory..."
-  #mkosi -C arch_build build --format=directory --output=final_os_tree
+  echo "Building the final OS files into a physical directory..."
+  mkosi -C arch_build build --format=directory --output=final_os_tree
   
   echo "Building the disk blueprint (partition layout)..."
   mkosi -C arch_build build --image-version="$BUILD_VER"
